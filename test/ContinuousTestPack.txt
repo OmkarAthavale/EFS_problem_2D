@@ -1,4 +1,1 @@
-TestMinimal.hpp
-TestMinimal3D.hpp
-TestMinimal3D_Restart.hpp
-TestMinimal3D_Checkpoint.hpp
+TestEFS.hpp

@@ -23,6 +23,7 @@
 
 #include "AbstractCardiacCellFactory.hpp"
 #include "../src/BidomainProblemNeural.hpp"
+#include "../src/ICCFactory.hpp"
 
 #include "DistributedTetrahedralMesh.hpp"
 #include "TrianglesMeshReader.hpp"
@@ -32,54 +33,67 @@
 
 #include "PetscSetupAndFinalize.hpp"
 
-class ICCFactory : public AbstractCardiacCellFactory<PROBLEM_SPACE_DIM>
+class TestEFS : public CxxTest::TestSuite
 {
   private:
-  std::set<unsigned> setICCNode;
-
-  public:
-  ICCFactory(std::set<unsigned> iccNodes) : AbstractCardiacCellFactory<PROBLEM_SPACE_DIM>(), setICCNode(iccNodes)
+  double Beta_Baker2018(double f_EFS)
   {
-  };
+      double a = 0.00506829502520040;
+      double b = 0.0208263263233946;
+      double c = -0.00489642388727810;
+      double d = -0.289000341617805;
 
-  AbstractCardiacCell* CreateCardiacCellForTissueNode(Node<PROBLEM_SPACE_DIM>* pNode)
-  {
-    unsigned index = pNode->GetIndex();
+      double toHz = 1.0;
+      double endings_per_ICC = 1.0;
 
-    ChastePoint<PROBLEM_SPACE_DIM> centre(0.02,0.04);
-    ChastePoint<PROBLEM_SPACE_DIM> radii (0.01,0.03);
-    ChasteEllipsoid<PROBLEM_SPACE_DIM> pacemaker(centre, radii);
-    
-    if(setICCNode.find(index) != setICCNode.end())
-    {
-      CellDu2013_neuralFromCellML* cell = new CellDu2013_neuralFromCellML(mpSolver, mpZeroStimulus);
-      
-      if (pacemaker.DoesContain(pNode->GetPoint()))
+      double eval_val = a*exp(b * f_EFS * toHz * endings_per_ICC) + c*exp(d * f_EFS * toHz * endings_per_ICC);
+
+      if (eval_val > 0.007)
       {
-        cell->SetParameter("correction", 1.05);
+          return 0.007;
+      } else if (eval_val < 0.0001)
+      {
+          return 0.0001;
+      } else
+      {
+          return eval_val;
       }
+  }
 
-      return cell;
+  double GBKmax_Kim2003(double f_EFS)
+  {
+      double a = 0.147525397773565;
+      double b = -0.175087725001323;
+      double c = 1.00016775704983;
+      double d = 0.0285035244071441;
 
-    }
+      double toHz = 1.0;
+      double endings_per_ICC = 1.0;
 
-    return new DummyDerivedCa(mpSolver, mpZeroStimulus);
+      double eval_val = a*exp(b * f_EFS * toHz * endings_per_ICC) + c*exp(d * f_EFS * toHz * endings_per_ICC);
 
-  };
-};
+      if (eval_val > 2.5)
+      {
+          return 2.5;
+      } else if (eval_val < 1.15)
+      {
+          return 1.15;
+      } else
+      {
+          return eval_val;
+      }
+  }
 
-class TestMinimal : public CxxTest::TestSuite
-{
   public:
-  void TestMinimalSimulation()
+  void TestBaseline() throw(Exception)
   {
 
     // -------------- OPTIONS ----------------- //
     std::string mesh_ident = "MeshNetwork-2D-85Nodes-144Elems";
-    std::string output_dir = mesh_ident + "-2DChkpt";
+    std::string output_dir = mesh_ident + "-BaselineCheckpoint";
     unsigned bath_attr = 0;
     unsigned icc_attr = 1;
-    double duration = 10000.0;      // ms
+    double duration = 500.0;      // ms
     double print_step = 100.0;        // ms
     // ---------------------------------------- //
 
@@ -130,18 +144,8 @@ class TestMinimal : public CxxTest::TestSuite
     TRACE("Number of ICC nodes: " << iccNodes.size());
     TRACE("Total number of nodes: " << mesh.GetNumAllNodes());
 
-    // TODO: Load neural info and set up ParamConfig singleton instance
-    // NeuralData eData = NeuralData("projects/NeuralData/T1_e.txt", 1, 2, 3, 0.12, 0.36); // this will be a pre-processed (in Python) table instead of a histogram
-    // maybe possible to call Python pre-processor on the fly at runtime (future work)
-    // ParamConfig::SetExcitatory("path/to/preprocessed_e.txt");
-    // ParamConfig::SetInhibitory("path/to/preprocessed_i.txt");
-    // ParamConfig::SetupInfluenceRegionGrid(width, length, width_bins, length_bins)
-    // ParamConfig::SetInputTimestep(stepInMillisec)
-
-
-
     // Initialise problem with cells
-    ICCFactory network_cells(iccNodes);
+    ICCFactory<PROBLEM_SPACE_DIM> network_cells(iccNodes);
     BidomainProblemNeural<PROBLEM_SPACE_DIM> bidomain_problem(&network_cells, true);
     bidomain_problem.SetMesh( &mesh );
 
@@ -173,20 +177,66 @@ class TestMinimal : public CxxTest::TestSuite
     HeartEventHandler::Report();
   };
 
-  void TestRestarting()
+  void TestRestartingEFS() throw(Exception)
   {
 
     // -------------- OPTIONS ----------------- //
     std::string mesh_ident = "MeshNetwork-2D-85Nodes-144Elems";
-    std::string output_dir = mesh_ident + "-2DChkpt";
-    double added_duration = 10000.0;      // ms
+    std::string chkpt_dir = mesh_ident + "-BaselineCheckpoint";
+    double added_duration = 500.0;      // ms
+    double freq = 9.5;                    // Hz
+    std::string output_dir = chkpt_dir + "_neural120s";
     // ---------------------------------------- //
 
-    BidomainProblemNeural<PROBLEM_SPACE_DIM>* p_bidomain_problem = CardiacSimulationArchiverNeural< BidomainProblemNeural<PROBLEM_SPACE_DIM> >::Load(output_dir + "checkpoint_problem");
+    BidomainProblemNeural<PROBLEM_SPACE_DIM>* p_bidomain_problem = CardiacSimulationArchiverNeural< BidomainProblemNeural<PROBLEM_SPACE_DIM> >::Load(chkpt_dir + "/checkpoint_problem");
+
+    std::set<unsigned> ICC_id;
+    ICC_id.insert(1);
+    std::set<unsigned> iccNodes;
+
+    AbstractTetrahedralMesh<PROBLEM_ELEMENT_DIM,PROBLEM_SPACE_DIM>& mesh = p_bidomain_problem->rGetMesh();
+    AbstractCardiacTissue<PROBLEM_ELEMENT_DIM,PROBLEM_SPACE_DIM>* tissue = p_bidomain_problem->GetTissue();
+    double eleIdentify = 0;
+    for (AbstractTetrahedralMesh<PROBLEM_ELEMENT_DIM,PROBLEM_SPACE_DIM>::ElementIterator iter = mesh.GetElementIteratorBegin(); iter != mesh.GetElementIteratorEnd(); ++iter)
+    {
+      eleIdentify = iter->GetAttribute();
+      if (eleIdentify == 1) // ICC=1 and Bath=0
+      {
+        if(!iter->GetNode(0)->IsBoundaryNode())
+        {
+          iccNodes.insert(iter->GetNodeGlobalIndex(0));
+        }
+        if(!iter->GetNode(1)->IsBoundaryNode())
+        {
+          iccNodes.insert(iter->GetNodeGlobalIndex(1));
+        }
+        // 2D has two nodes per element for line elements?
+        if(!iter->GetNode(2)->IsBoundaryNode())
+        {
+          iccNodes.insert(iter->GetNodeGlobalIndex(2));
+        }
+      }
+    }
+
+    double ex_val = Beta_Baker2018(freq);
+    double in_val = GBKmax_Kim2003(freq);
+
+    TRACE("beta: " << ex_val);
+    TRACE("GBKmax: " << in_val);
+
+    for (std::set<unsigned>::iterator it = iccNodes.begin(); it != iccNodes.end(); ++it){
+      tissue->GetCardiacCell(*it)->SetParameter("excitatory_neural", ex_val);
+      tissue->GetCardiacCell(*it)->SetParameter("inhibitory_neural", in_val);
+    }
 
     HeartConfig::Instance()->SetSimulationDuration(p_bidomain_problem->GetCurrentTime() + added_duration); //ms
+    HeartConfig::Instance()->SetOutputDirectory(output_dir);
 
     p_bidomain_problem->Solve();
+
+    // Print summary to terminal
+    HeartEventHandler::Headings();
+    HeartEventHandler::Report();
 
     delete p_bidomain_problem;
 

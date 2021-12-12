@@ -5,25 +5,19 @@
 
 #include "AbstractCardiacCell.hpp"
 #include "AbstractCardiacCellFactory.hpp"
-#include "ChastePoint.hpp"
-#include "ChasteEllipsoid.hpp"
 #include "../src/DummyDerivedCa.hpp"
-#include "../src/Du2013_neural.hpp"
+#include "../src/Du2013_neural_sens.hpp"
 
 template<unsigned DIM>
 class ICCFactory : public AbstractCardiacCellFactory<DIM>
 {
   private:
   std::set<unsigned> setICCNode;
-  ChastePoint<DIM>* pm_centre;
-  ChastePoint<DIM>* pm_radius;
 
   public:
-  ICCFactory(std::set<unsigned> iccNodes, ChastePoint<DIM>* centre, ChastePoint<DIM>* radius) : 
+  ICCFactory(std::set<unsigned> iccNodes) : 
   AbstractCardiacCellFactory<DIM>(), 
-  setICCNode(iccNodes), 
-  pm_centre(centre), 
-  pm_radius(radius)
+  setICCNode(iccNodes)
   {};
 
   // Destructor

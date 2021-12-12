@@ -34,4 +34,4 @@
 
 # This allows us to build tests of the project.
 # Simply set the project name in the line below.
-chaste_do_test_project(minimum_project)
+chaste_do_test_project(EFS_problem_2D)
