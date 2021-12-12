@@ -97,7 +97,7 @@ class TestEFS : public CxxTest::TestSuite
     // ---------------------------------------- //
 
     // Read input file
-    std::ifstream in(freq_dir.c_str());
+    std::ifstream in(freq_file.c_str());
     std::string line;
     std::getline(in,line);  
     double freq = std::stod(line);
