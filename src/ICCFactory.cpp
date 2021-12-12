@@ -9,7 +9,7 @@ AbstractCardiacCell* ICCFactory<DIM>::CreateCardiacCellForTissueNode(Node<DIM>* 
   {
     CellDu2013_neural_sensFromCellML* cell = new CellDu2013_neural_sensFromCellML(this->mpSolver, this->mpZeroStimulus);
     
-    cell->SetParameter("E_K", -70.0-4.0*y)
+    cell->SetParameter("E_K", -70.0-4.0*y);
 
     return cell;
   }
