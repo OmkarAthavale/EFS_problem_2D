@@ -85,43 +85,30 @@ class TestEFS : public CxxTest::TestSuite
   }
 
   public:
-  void TestBaseline() throw(Exception)
+  void TestRestartingEFS() throw(Exception)
   {
 
     // -------------- OPTIONS ----------------- //
     std::string mesh_ident = "EFS_problem_0-5_0-01";
-    std::string output_dir = mesh_ident + "-BaselineCheckpoint";
-    unsigned bath_attr = 0;
-    unsigned icc_attr = 1;
-    double duration = 60000.0;      // ms
-    double print_step = 100.0;        // ms
+    std::string chkpt_dir = mesh_ident + "-BaselineCheckpoint";
+    double added_duration = 60000.0;      // ms
+    double freq = 9.5;                    // Hz
+    std::string output_dir = chkpt_dir + "_EFS";
     // ---------------------------------------- //
 
-    // Mesh location
-    std::string mesh_dir = "projects/mesh/EFS_problem/" + mesh_ident;
-    TrianglesMeshReader<PROBLEM_ELEMENT_DIM,PROBLEM_SPACE_DIM> mesh_reader(mesh_dir.c_str());
+    BidomainProblemNeural<PROBLEM_SPACE_DIM>* p_bidomain_problem = CardiacSimulationArchiverNeural< BidomainProblemNeural<PROBLEM_SPACE_DIM> >::Load(chkpt_dir + "/checkpoint_problem");
 
-    // Initialise mesh variables
-    std::set<unsigned> iccNodes;
-    unsigned nElements = 0;
-    DistributedTetrahedralMesh<PROBLEM_ELEMENT_DIM,PROBLEM_SPACE_DIM> mesh;
-
-    // Cell labels
     std::set<unsigned> ICC_id;
-    ICC_id.insert(icc_attr);
-    std::set<unsigned> bath_id;
-    bath_id.insert(bath_attr);
+    ICC_id.insert(1);
+    std::set<unsigned> iccNodes;
 
-    // Construct ICC mesh network from mesh file
-    mesh.ConstructFromMeshReader(mesh_reader);
-    nElements = mesh.GetNumLocalElements();
-
-    // Define boundary nodes as bath
+    AbstractTetrahedralMesh<PROBLEM_ELEMENT_DIM,PROBLEM_SPACE_DIM>& mesh = p_bidomain_problem->rGetMesh();
+    AbstractCardiacTissue<PROBLEM_ELEMENT_DIM,PROBLEM_SPACE_DIM>* tissue = p_bidomain_problem->GetTissue();
     double eleIdentify = 0;
-    for (DistributedTetrahedralMesh<PROBLEM_ELEMENT_DIM,PROBLEM_SPACE_DIM>::ElementIterator iter = mesh.GetElementIteratorBegin(); iter != mesh.GetElementIteratorEnd(); ++iter)
+    for (AbstractTetrahedralMesh<PROBLEM_ELEMENT_DIM,PROBLEM_SPACE_DIM>::ElementIterator iter = mesh.GetElementIteratorBegin(); iter != mesh.GetElementIteratorEnd(); ++iter)
     {
       eleIdentify = iter->GetAttribute();
-      if (eleIdentify == icc_attr) // ICC=1 and Bath=0
+      if (eleIdentify == 1) // ICC=1 and Bath=0
       {
         if(!iter->GetNode(0)->IsBoundaryNode())
         {
@@ -139,42 +126,28 @@ class TestEFS : public CxxTest::TestSuite
       }
     }
 
-    // Print mesh summary
-    TRACE("Number of elements: " << nElements);
-    TRACE("Number of ICC nodes: " << iccNodes.size());
-    TRACE("Total number of nodes: " << mesh.GetNumAllNodes());
+    double ex_val = Beta_Baker2018(freq);
+    double in_val = GBKmax_Kim2003(freq);
 
-    // Initialise problem with cells
-    ICCFactory<PROBLEM_SPACE_DIM> network_cells(iccNodes);
-    BidomainProblemNeural<PROBLEM_SPACE_DIM> bidomain_problem(&network_cells, true);
-    bidomain_problem.SetMesh( &mesh );
+    TRACE("beta: " << ex_val);
+    TRACE("GBKmax: " << in_val);
 
-    // Modify simulation config
-    HeartConfig::Instance()->Reset();
-    HeartConfig::Instance()->SetSimulationDuration(duration);
-    HeartConfig::Instance()->SetOutputDirectory(output_dir.c_str());
-    HeartConfig::Instance()->SetOutputFilenamePrefix("results");
-    HeartConfig::Instance()->SetTissueAndBathIdentifiers(ICC_id, bath_id);
-    HeartConfig::Instance()->SetIntracellularConductivities(Create_c_vector(0.12, 0.12)); // these are quite smaller than cm values
-    HeartConfig::Instance()->SetExtracellularConductivities(Create_c_vector(0.2, 0.2)); // these are quite smaller than cm values
-    HeartConfig::Instance()->SetSurfaceAreaToVolumeRatio(2000);
-    HeartConfig::Instance()->SetCapacitance(2.5);
-    HeartConfig::Instance()->SetVisualizeWithMeshalyzer(true);
-    HeartConfig::Instance()->SetOdePdeAndPrintingTimeSteps(0.1, 0.1, print_step);
+    for (std::set<unsigned>::iterator it = iccNodes.begin(); it != iccNodes.end(); ++it){
+      tissue->GetCardiacCell(*it)->SetParameter("excitatory_neural", ex_val);
+      tissue->GetCardiacCell(*it)->SetParameter("inhibitory_neural", in_val);
+    }
 
-    // Update problem from config
-    bidomain_problem.SetWriteInfo();
-    bidomain_problem.Initialise();    // resets initial conditions and time to 0.0 ms
+    HeartConfig::Instance()->SetSimulationDuration(p_bidomain_problem->GetCurrentTime() + added_duration); //ms
+    HeartConfig::Instance()->SetOutputDirectory(output_dir);
 
-    TRACE("Starting Solve");
-    // Solve problem
-    bidomain_problem.Solve();
-
-    CardiacSimulationArchiverNeural< BidomainProblemNeural<PROBLEM_SPACE_DIM> >::Save(bidomain_problem, output_dir + "/checkpoint_problem");
+    p_bidomain_problem->Solve();
 
     // Print summary to terminal
     HeartEventHandler::Headings();
     HeartEventHandler::Report();
+
+    delete p_bidomain_problem;
+
   };
 
 };
