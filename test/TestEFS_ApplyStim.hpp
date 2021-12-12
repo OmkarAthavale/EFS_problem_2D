@@ -92,9 +92,15 @@ class TestEFS : public CxxTest::TestSuite
     std::string mesh_ident = "EFS_problem_0-5_0-025";
     std::string chkpt_dir = mesh_ident + "-BaselineCheckpoint";
     double added_duration = 1000.0;      // ms
-    double freq = 9.5;                    // Hz
+    std::string freq_file = "/home/input1.txt";                    // Hz
     std::string output_dir = chkpt_dir + "_EFS";
     // ---------------------------------------- //
+
+    // Read input file
+    std::ifstream in(freq_dir.c_str());
+    std::string line;
+    std::getline(in,line);  
+    double freq = std::stod(line);
 
     BidomainProblemNeural<PROBLEM_SPACE_DIM>* p_bidomain_problem = CardiacSimulationArchiverNeural< BidomainProblemNeural<PROBLEM_SPACE_DIM> >::Load(chkpt_dir + "/checkpoint_problem");
 
