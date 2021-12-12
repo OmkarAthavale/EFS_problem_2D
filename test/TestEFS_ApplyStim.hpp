@@ -91,7 +91,7 @@ class TestEFS : public CxxTest::TestSuite
     // -------------- OPTIONS ----------------- //
     std::string mesh_ident = "EFS_problem_0-5_0-01";
     std::string chkpt_dir = mesh_ident + "-BaselineCheckpoint";
-    double added_duration = 60000.0;      // ms
+    double added_duration = 1000.0;      // ms
     double freq = 9.5;                    // Hz
     std::string output_dir = chkpt_dir + "_EFS";
     // ---------------------------------------- //
