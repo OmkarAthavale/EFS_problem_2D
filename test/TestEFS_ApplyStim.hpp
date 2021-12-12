@@ -135,6 +135,7 @@ class TestEFS : public CxxTest::TestSuite
     for (std::set<unsigned>::iterator it = iccNodes.begin(); it != iccNodes.end(); ++it){
       tissue->GetCardiacCell(*it)->SetParameter("excitatory_neural", ex_val);
       tissue->GetCardiacCell(*it)->SetParameter("inhibitory_neural", in_val);
+      tissue->GetCardiacCell(*it)->SetParameter("correction", 0.0);
     }
 
     HeartConfig::Instance()->SetSimulationDuration(p_bidomain_problem->GetCurrentTime() + added_duration); //ms
