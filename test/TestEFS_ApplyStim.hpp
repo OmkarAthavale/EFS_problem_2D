@@ -92,7 +92,7 @@ class TestEFS : public CxxTest::TestSuite
     std::string mesh_ident = "EFS_problem_0-5_0-025";
     std::string chkpt_dir = mesh_ident + "-BaselineCheckpoint";
     double added_duration = 1000.0;      // ms
-    std::string freq_file = "/home/input1.txt";                    // Hz
+    std::string freq_file = "/home/chaste/input1.txt";                    // Hz
     std::string output_dir = chkpt_dir + "_EFS";
     // ---------------------------------------- //
 
