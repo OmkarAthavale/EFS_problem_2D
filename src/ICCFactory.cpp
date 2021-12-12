@@ -4,12 +4,12 @@ template<unsigned DIM>
 AbstractCardiacCell* ICCFactory<DIM>::CreateCardiacCellForTissueNode(Node<DIM>* pNode)
 {
   unsigned index = pNode->GetIndex();
-  double x = pNode->GetPoint[0]
+  double y = pNode->GetPoint()[1]
   if(setICCNode.find(index) != setICCNode.end())
   {
     CellDu2013_neural_sensFromCellML* cell = new CellDu2013_neural_sensFromCellML(this->mpSolver, this->mpZeroStimulus);
     
-    cell->SetParameter("E_K", -70.0-4.0*x)
+    cell->SetParameter("E_K", -70.0-4.0*y)
 
     return cell;
   }
