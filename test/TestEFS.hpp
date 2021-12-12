@@ -89,16 +89,16 @@ class TestEFS : public CxxTest::TestSuite
   {
 
     // -------------- OPTIONS ----------------- //
-    std::string mesh_ident = "MeshNetwork-2D-85Nodes-144Elems";
+    std::string mesh_ident = "EFS_problem_0-5_0-01";
     std::string output_dir = mesh_ident + "-BaselineCheckpoint";
     unsigned bath_attr = 0;
     unsigned icc_attr = 1;
-    double duration = 500.0;      // ms
+    double duration = 60000.0;      // ms
     double print_step = 100.0;        // ms
     // ---------------------------------------- //
 
     // Mesh location
-    std::string mesh_dir = "projects/mesh/ICC2D/" + mesh_ident;
+    std::string mesh_dir = "projects/mesh/EFS_problem/" + mesh_ident;
     TrianglesMeshReader<PROBLEM_ELEMENT_DIM,PROBLEM_SPACE_DIM> mesh_reader(mesh_dir.c_str());
 
     // Initialise mesh variables
@@ -181,11 +181,11 @@ class TestEFS : public CxxTest::TestSuite
   {
 
     // -------------- OPTIONS ----------------- //
-    std::string mesh_ident = "MeshNetwork-2D-85Nodes-144Elems";
+    std::string mesh_ident = "EFS_problem_0-5_0-01";
     std::string chkpt_dir = mesh_ident + "-BaselineCheckpoint";
-    double added_duration = 500.0;      // ms
+    double added_duration = 60000.0;      // ms
     double freq = 9.5;                    // Hz
-    std::string output_dir = chkpt_dir + "_neural120s";
+    std::string output_dir = chkpt_dir + "_EFS";
     // ---------------------------------------- //
 
     BidomainProblemNeural<PROBLEM_SPACE_DIM>* p_bidomain_problem = CardiacSimulationArchiverNeural< BidomainProblemNeural<PROBLEM_SPACE_DIM> >::Load(chkpt_dir + "/checkpoint_problem");
