@@ -89,7 +89,7 @@ class TestEFS : public CxxTest::TestSuite
   {
 
     // -------------- OPTIONS ----------------- //
-    std::string mesh_ident = "EFS_problem_0-5_0-01";
+    std::string mesh_ident = "EFS_problem_0-5_0-025";
     std::string output_dir = mesh_ident + "-BaselineCheckpoint";
     unsigned bath_attr = 0;
     unsigned icc_attr = 1;

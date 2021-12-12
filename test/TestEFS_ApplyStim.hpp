@@ -89,7 +89,7 @@ class TestEFS : public CxxTest::TestSuite
   {
 
     // -------------- OPTIONS ----------------- //
-    std::string mesh_ident = "EFS_problem_0-5_0-01";
+    std::string mesh_ident = "EFS_problem_0-5_0-025";
     std::string chkpt_dir = mesh_ident + "-BaselineCheckpoint";
     double added_duration = 1000.0;      // ms
     double freq = 9.5;                    // Hz
@@ -135,7 +135,6 @@ class TestEFS : public CxxTest::TestSuite
     for (std::set<unsigned>::iterator it = iccNodes.begin(); it != iccNodes.end(); ++it){
       tissue->GetCardiacCell(*it)->SetParameter("excitatory_neural", ex_val);
       tissue->GetCardiacCell(*it)->SetParameter("inhibitory_neural", in_val);
-      tissue->GetCardiacCell(*it)->SetParameter("correction", 0.0);
     }
 
     HeartConfig::Instance()->SetSimulationDuration(p_bidomain_problem->GetCurrentTime() + added_duration); //ms
